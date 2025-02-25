@@ -1,0 +1,2404 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+
+\usepackage[style=numeric, backend=bibtex, doi=true, url=true]{biblatex}
+\addbibresource{digital_twins.bib}
+
+% Define custom colors for syntax highlighting
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% Configure code listings style
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% Page layout settings
+\geometry{margin=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Digital Twins for Salmon Wellbeing}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{Digital Twins for Salmon Wellbeing: A Tutorial Series}
+\author{Based on Giske et al. (2025)}
+\date{Arvid Lundervold w/ Claude 3.7 Sonnet - \today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This tutorial provides a step-by-step implementation guide for creating digital twins that model salmon wellbeing based on the paper "Premises for digital twins reporting on Atlantic salmon wellbeing" (Giske et al., 2025). The implementation captures predictions on boredom, stress and wellbeing using a computational evolutionary model of the factors underlying behavior. We demonstrate how to construct an agent-based model of salmon digital twins by modeling subjective wellbeing experience, prediction of near future, and allostasis (the bodily preparation for expected near future). Each section progressively builds the components required for digital twin models that can deliver early warnings about issues affecting salmon health in aquaculture settings. This implementation supports the 3Rs (replacement, reduction, refinement) by providing actionable information without relying on animal experiments.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+\subsection{Background}
+Digital twins are virtual representations of physical entities that can be used to model and predict the behavior of the corresponding real-world objects. In the context of salmon aquaculture, digital twins can provide insights into fish wellbeing without invasive procedures or extensive experimentation. The paper by Giske et al. (2025) \cite{giske2025premises} outlines the theoretical framework for such digital twins, focusing on the mechanisms underlying wellbeing prediction in salmon.
+
+
+\subsection{Key Concepts}
+Before diving into implementation, it's important to understand several key concepts:
+
+\begin{itemize}
+    \item \textbf{Agency}: The ability of an autonomous entity to set its own goal-directed behavior
+    \item \textbf{Allostasis}: The preparative regulation of bodily resources before a need arises
+    \item \textbf{Survival circuits}: Integrated neural pathways responding to specific subjective internal models
+    \item \textbf{Global organismic state}: The organism's centralized emotional state
+    \item \textbf{Episodic-like memory}: The ability to remember what/where/when information from experiences
+    \item \textbf{Subjective internal models}: Internal representations of aspects of self or environment
+\end{itemize}
+
+\subsection{Tutorial Overview}
+This tutorial is structured as follows:
+\begin{enumerate}
+    \item Basic building blocks for the digital twin
+    \item Implementation of survival circuits
+    \item Learning and memory mechanisms
+    \item Wellbeing assessment systems
+    \item Evolutionary adaptation framework
+    \item Integration into a complete digital twin
+    \item Validation and analysis methods
+\end{enumerate}
+
+Each section provides theoretical background, implementation code, and examples of usage.
+
+\section{Prerequisites and Setup}
+\subsection{Software Requirements}
+The implementation requires:
+\begin{itemize}
+    \item Python 3.8+
+    \item NumPy, Pandas, SciPy
+    \item Matplotlib, Seaborn for visualization
+    \item NetworkX for survival circuit modeling
+    \item Gym for reinforcement learning environments
+\end{itemize}
+
+\subsection{Installation}
+\begin{lstlisting}[language=bash]
+# Create virtual environment
+python -m venv salmon_twin_env
+source salmon_twin_env/bin/activate  # On Windows: salmon_twin_env\Scripts\activate
+
+# Install requirements
+pip install numpy pandas scipy matplotlib seaborn networkx gym
+\end{lstlisting}
+
+\section{Basic Building Blocks}
+\subsection{Core Data Structures}
+The first step is to implement the core data structures for the digital twin.
+
+\subsubsection{Basic Needs Representation}
+Based on Figure 1 from the paper, we implement the basic needs of Atlantic salmon:
+
+\begin{lstlisting}[language=Python]
+class BasicNeeds:
+    """Representation of basic needs categories for salmon wellbeing"""
+    
+    def __init__(self):
+        # Cognitive needs
+        self.exploration = 0.0
+        self.protection = 0.0
+        self.safety = 0.0
+        
+        # Social needs
+        self.social_contact = 0.0
+        self.sexual_behavior = 0.0
+        
+        # Bodily needs
+        self.feeding = 0.0
+        self.nutrition = 0.0
+        self.health = 0.0
+        self.rest = 0.0
+        self.kinesis = 0.0
+        self.body_care = 0.0
+        
+        # Physical needs
+        self.thermal_regulation = 0.0
+        self.osmotic_balance = 0.0
+        self.respiration = 0.0
+        
+        # Behavior control need
+        self.behavior_control = 0.0
+        
+    def get_all_needs(self):
+        """Return all needs as a dictionary"""
+        return {
+            "exploration": self.exploration,
+            "protection": self.protection,
+            "safety": self.safety,
+            "social_contact": self.social_contact,
+            "sexual_behavior": self.sexual_behavior,
+            "feeding": self.feeding,
+            "nutrition": self.nutrition,
+            "health": self.health,
+            "rest": self.rest,
+            "kinesis": self.kinesis,
+            "body_care": self.body_care,
+            "thermal_regulation": self.thermal_regulation,
+            "osmotic_balance": self.osmotic_balance,
+            "respiration": self.respiration,
+            "behavior_control": self.behavior_control
+        }
+        
+    def get_most_urgent_need(self):
+        """Return the most urgent need (highest value)"""
+        needs = self.get_all_needs()
+        return max(needs.items(), key=lambda x: x[1])
+\end{lstlisting}
+
+\subsubsection{Neuronal Response Function}
+The neuronal response function converts metric values (such as temperature or oxygen levels) into subjective values in the salmon's brain:
+
+\begin{lstlisting}[language=Python]
+import numpy as np
+
+class NeuronalResponse:
+    """
+    Converts metric input values to subjective values in the salmon brain
+    using a non-linear function (sigmoid by default)
+    """
+    
+    def __init__(self, threshold, sensitivity):
+        """
+        Args:
+            threshold: The inflection point of the sigmoid function
+            sensitivity: The steepness of the sigmoid curve
+        """
+        self.threshold = threshold
+        self.sensitivity = sensitivity
+    
+    def activate(self, input_value):
+        """Convert metric input to subjective value"""
+        return 1 / (1 + np.exp(-self.sensitivity * (input_value - self.threshold)))
+        
+    def __call__(self, input_value):
+        """Allow direct calling of the object as a function"""
+        return self.activate(input_value)
+\end{lstlisting}
+
+\subsubsection{Sensor Implementation}
+Sensors process environmental inputs:
+
+\begin{lstlisting}[language=Python]
+class Sensor:
+    """
+    Base class for sensors that detect environmental conditions
+    """
+    
+    def __init__(self, name, neuronal_response):
+        self.name = name
+        self.neuronal_response = neuronal_response
+        self.last_value = None
+        self.last_processed = None
+        
+    def sense(self, environment_value):
+        """
+        Sense a value from the environment and process it
+        through the neuronal response function
+        """
+        self.last_value = environment_value
+        self.last_processed = self.neuronal_response(environment_value)
+        return self.last_processed
+\end{lstlisting}
+
+\subsection{Environment Representation}
+The environment provides inputs to the digital twin:
+
+\begin{lstlisting}[language=Python]
+class Environment:
+    """
+    Representation of the aquaculture environment
+    """
+    
+    def __init__(self, 
+                 temperature=10, 
+                 oxygen_level=8.5,
+                 light_intensity=100,
+                 food_availability=1.0,
+                 social_density=50,
+                 noise_level=0.1):
+        self.temperature = temperature
+        self.oxygen_level = oxygen_level
+        self.light_intensity = light_intensity
+        self.food_availability = food_availability
+        self.social_density = social_density
+        self.noise_level = noise_level
+        self.time = 0
+        
+    def get_state(self):
+        """Return the current state of the environment"""
+        return {
+            "temperature": self.temperature,
+            "oxygen_level": self.oxygen_level,
+            "light_intensity": self.light_intensity,
+            "food_availability": self.food_availability,
+            "social_density": self.social_density,
+            "noise_level": self.noise_level,
+            "time": self.time
+        }
+        
+    def step(self, delta_t=1):
+        """Advance the environment by time delta_t"""
+        self.time += delta_t
+        
+        # Simulate some environmental fluctuations
+        self.temperature += np.random.normal(0, 0.1)
+        self.oxygen_level += np.random.normal(0, 0.05)
+        self.light_intensity = max(0, self.light_intensity + np.random.normal(0, 5))
+        
+        # Ensure values stay in reasonable ranges
+        self.temperature = np.clip(self.temperature, 5, 20)
+        self.oxygen_level = np.clip(self.oxygen_level, 4, 12)
+\end{lstlisting}
+
+\subsection{Visualization Tools}
+Implementing basic visualization for the needs:
+
+\begin{lstlisting}[language=Python]
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def visualize_needs(basic_needs):
+    """
+    Create a bar chart of basic needs
+    
+    Args:
+        basic_needs: BasicNeeds object
+    """
+    needs = basic_needs.get_all_needs()
+    
+    # Create grouped bars by category
+    cognitive = ["exploration", "protection", "safety"]
+    social = ["social_contact", "sexual_behavior"]
+    bodily = ["feeding", "nutrition", "health", "rest", "kinesis", "body_care"]
+    physical = ["thermal_regulation", "osmotic_balance", "respiration"]
+    control = ["behavior_control"]
+    
+    categories = {
+        "Cognitive": [needs[n] for n in cognitive],
+        "Social": [needs[n] for n in social],
+        "Bodily": [needs[n] for n in bodily],
+        "Physical": [needs[n] for n in physical],
+        "Control": [needs[n] for n in control]
+    }
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    x = np.arange(len(categories))
+    width = 0.8 / max(len(v) for v in categories.values())
+    
+    for i, (category, values) in enumerate(categories.items()):
+        bars = []
+        for j, val in enumerate(values):
+            bars.append(ax.bar(i + j*width, val, width, label=f"{category} {j+1}"))
+    
+    ax.set_ylabel('Need Intensity')
+    ax.set_title('Basic Needs of Digital Salmon')
+    ax.set_xticks(x + width/2)
+    ax.set_xticklabels(categories.keys())
+    
+    plt.tight_layout()
+    plt.show()
+\end{lstlisting}
+
+\section{Survival Circuits}
+Based on Figure 2 from the paper, we implement the survival circuits that drive salmon behavior.
+
+\subsection{Survival Circuit Implementation}
+
+\begin{lstlisting}[language=Python]
+class SurvivalCircuit:
+    """
+    Implementation of a survival circuit as described in the paper.
+    A survival circuit is a highly integrated neural pathway from memory 
+    or new sensing via attention to behavior.
+    """
+    
+    def __init__(self, name, sensors=None):
+        self.name = name
+        self.sensors = sensors or []  # List of Sensor objects
+        self.neurobiological_state = 0.0  # Current activation level
+        self.hormone_modulation = 1.0  # Default hormone influence
+        
+    def add_sensor(self, sensor):
+        """Add a sensor to this circuit"""
+        self.sensors.append(sensor)
+        
+    def process_inputs(self, environment):
+        """
+        Process environmental inputs through the circuit's sensors
+        
+        Args:
+            environment: Environment object with current state
+        
+        Returns:
+            The neurobiological state activation level (0-1)
+        """
+        if not self.sensors:
+            return 0.0
+            
+        env_state = environment.get_state()
+        
+        # Process each sensor input
+        activations = []
+        for sensor in self.sensors:
+            if sensor.name in env_state:
+                activations.append(sensor.sense(env_state[sensor.name]))
+        
+        # If we have activations, compute the neurobiological state
+        if activations:
+            # Apply sigmoid function to combine inputs 
+            activation = np.mean(activations)  # Simple averaging for now
+            
+            # Apply hormone modulation
+            activation *= self.hormone_modulation
+            
+            # Update the neurobiological state
+            self.neurobiological_state = activation
+            
+        return self.neurobiological_state
+    
+    def set_hormone_modulation(self, modulation_value):
+        """
+        Set hormone modulation to adjust the circuit's sensitivity
+        
+        Args:
+            modulation_value: Value between 0-2 where 1 is neutral
+        """
+        self.hormone_modulation = max(0, modulation_value)
+\end{lstlisting}
+
+\subsection{Global Organismic State}
+
+The global organismic state (GOS) represents the dominant emotional state:
+
+\begin{lstlisting}[language=Python]
+class GlobalOrganismicState:
+    """
+    The organism's centralized emotional state as defined by
+    the currently dominant survival circuit
+    """
+    
+    def __init__(self):
+        self.active = False
+        self.dominant_circuit = None
+        self.attention_focus = None
+        self.intensity = 0.0
+        self.predicted_emotions = {}  # Emotional predictions for options
+        
+    def update(self, survival_circuits, attention_threshold=0.3):
+        """
+        Update the GOS based on competition between survival circuits
+        
+        Args:
+            survival_circuits: List of SurvivalCircuit objects
+            attention_threshold: Minimum activation needed for GOS
+            
+        Returns:
+            True if GOS is active, False otherwise
+        """
+        # Find the most active circuit
+        if not survival_circuits:
+            self.active = False
+            self.dominant_circuit = None
+            self.intensity = 0.0
+            return False
+            
+        # Get the circuit with highest activation
+        most_active = max(
+            survival_circuits, 
+            key=lambda circ: circ.neurobiological_state
+        )
+        
+        # Only establish GOS if the activation exceeds threshold
+        if most_active.neurobiological_state >= attention_threshold:
+            self.active = True
+            self.dominant_circuit = most_active
+            self.attention_focus = most_active.name
+            self.intensity = most_active.neurobiological_state
+            return True
+        else:
+            self.active = False
+            self.dominant_circuit = None
+            self.intensity = 0.0
+            return False
+\end{lstlisting}
+
+\subsection{Integrated Example}
+Let's put these components together:
+
+\begin{lstlisting}[language=Python]
+def create_basic_survival_circuits():
+    """Create a set of basic survival circuits for salmon"""
+    
+    # Create neuronal responses
+    temp_response = NeuronalResponse(threshold=12, sensitivity=0.5)
+    oxygen_response = NeuronalResponse(threshold=6, sensitivity=2.0)
+    food_response = NeuronalResponse(threshold=0.3, sensitivity=5.0)
+    light_response = NeuronalResponse(threshold=50, sensitivity=0.05)
+    noise_response = NeuronalResponse(threshold=0.5, sensitivity=-5.0)
+    
+    # Create sensors
+    temp_sensor = Sensor("temperature", temp_response)
+    oxygen_sensor = Sensor("oxygen_level", oxygen_response)
+    food_sensor = Sensor("food_availability", food_response)
+    light_sensor = Sensor("light_intensity", light_response)
+    noise_sensor = Sensor("noise_level", noise_response)
+    
+    # Create survival circuits
+    growth_circuit = SurvivalCircuit("growth")
+    growth_circuit.add_sensor(temp_sensor)
+    growth_circuit.add_sensor(food_sensor)
+    
+    defence_circuit = SurvivalCircuit("defence")
+    defence_circuit.add_sensor(noise_sensor)
+    
+    reproduction_circuit = SurvivalCircuit("reproduction")
+    
+    respiration_circuit = SurvivalCircuit("respiration")
+    respiration_circuit.add_sensor(oxygen_sensor)
+    
+    exploration_circuit = SurvivalCircuit("exploration")
+    exploration_circuit.add_sensor(light_sensor)
+    
+    return [
+        growth_circuit, 
+        defence_circuit, 
+        reproduction_circuit,
+        respiration_circuit,
+        exploration_circuit
+    ]
+\end{lstlisting}
+
+\section{Learning and Memory}
+\subsection{Episodic-like Memory}
+
+Implementing episodic-like memory for salmon to remember experiences:
+
+\begin{lstlisting}[language=Python]
+class EpisodicMemory:
+    """
+    Implementation of episodic-like memory that stores what/where/when/emotion
+    information from experiences
+    """
+    
+    def __init__(self, capacity=100):
+        self.capacity = capacity
+        self.episodes = []
+        
+    def store(self, what, where, when, emotion):
+        """
+        Store a new memory episode
+        
+        Args:
+            what: What happened (e.g., "feeding")
+            where: Location information
+            when: Timestamp
+            emotion: Emotional valence of the experience
+        """
+        # Create new episode
+        episode = {
+            "what": what,
+            "where": where,
+            "when": when,
+            "emotion": emotion,
+            "retrieval_count": 0  # Track how often this is retrieved
+        }
+        
+        # Add to episodes, maintaining capacity
+        self.episodes.append(episode)
+        if len(self.episodes) > self.capacity:
+            # Remove least accessed episode if we're over capacity
+            self.episodes.sort(key=lambda e: e["retrieval_count"])
+            self.episodes.pop(0)
+            
+    def retrieve_by_similarity(self, what=None, where=None, when=None):
+        """
+        Retrieve episodes that match the given criteria
+        
+        Returns:
+            List of matching episodes
+        """
+        matches = []
+        
+        for episode in self.episodes:
+            score = 0
+            
+            if what and episode["what"] == what:
+                score += 1
+            if where and episode["where"] == where:
+                score += 1
+            if when and abs(episode["when"] - when) < 24:  # Within 24 time units
+                score += 1
+                
+            if score > 0:
+                matches.append({
+                    "episode": episode,
+                    "score": score
+                })
+                episode["retrieval_count"] += 1
+                
+        # Sort matches by similarity score
+        matches.sort(key=lambda m: m["score"], reverse=True)
+        return [m["episode"] for m in matches]
+        
+    def retrieve_emotional_prediction(self, what, where=None):
+        """
+        Retrieve emotional prediction for a given situation
+        
+        Args:
+            what: The situation to predict emotion for
+            where: Optional location context
+            
+        Returns:
+            Predicted emotion value or None if no matching experiences
+        """
+        relevant = self.retrieve_by_similarity(what=what, where=where)
+        
+        if not relevant:
+            return None
+            
+        # Calculate the average emotional value, weighted by recency
+        total_emotion = 0
+        total_weight = 0
+        
+        for i, episode in enumerate(relevant):
+            # More recent episodes get higher weight
+            weight = 1.0 / (i + 1)
+            total_emotion += episode["emotion"] * weight
+            total_weight += weight
+            
+        if total_weight > 0:
+            return total_emotion / total_weight
+        else:
+            return None
+\end{lstlisting}
+
+\subsection{Learning Implementation}
+Implementing the learning mechanism:
+
+\begin{lstlisting}[language=Python]
+class Learning:
+    """
+    Implementation of learning mechanisms for the digital twin
+    """
+    
+    def __init__(self, learning_rate=0.1):
+        self.learning_rate = learning_rate
+        self.associations = {}  # Learned associations
+        
+    def update_association(self, stimulus, response, reward):
+        """
+        Update association between stimulus and response based on reward
+        
+        Args:
+            stimulus: The stimulus (input)
+            response: The response (action)
+            reward: The reward value (-1 to 1)
+        """
+        key = (stimulus, response)
+        
+        if key in self.associations:
+            # Update existing association using learning rate
+            current = self.associations[key]
+            self.associations[key] = current + self.learning_rate * (reward - current)
+        else:
+            # Create new association
+            self.associations[key] = self.learning_rate * reward
+            
+    def predict_reward(self, stimulus, response):
+        """
+        Predict reward for a stimulus-response pair
+        
+        Returns:
+            Predicted reward or 0 if no association exists
+        """
+        key = (stimulus, response)
+        return self.associations.get(key, 0.0)
+        
+    def get_best_response(self, stimulus, possible_responses):
+        """
+        Get the response with highest predicted reward
+        
+        Args:
+            stimulus: The stimulus to respond to
+            possible_responses: List of possible responses
+            
+        Returns:
+            The response with highest predicted reward
+        """
+        if not possible_responses:
+            return None
+            
+        best_response = possible_responses[0]
+        best_reward = self.predict_reward(stimulus, best_response)
+        
+        for response in possible_responses[1:]:
+            reward = self.predict_reward(stimulus, response)
+            if reward > best_reward:
+                best_reward = reward
+                best_response = response
+                
+        return best_response
+\end{lstlisting}
+
+\subsection{Prediction Error}
+Implementing prediction error calculation:
+
+\begin{lstlisting}[language=Python]
+class PredictionError:
+    """
+    Calculates prediction errors between expected and observed states
+    """
+    
+    def __init__(self):
+        self.predictions = {}
+        self.error_history = []
+        
+    def set_prediction(self, variable, expected_value):
+        """Set a prediction for a variable"""
+        self.predictions[variable] = expected_value
+        
+    def calculate_error(self, variable, observed_value):
+        """
+        Calculate prediction error for a variable
+        
+        Returns:
+            Error value or None if no prediction exists
+        """
+        if variable not in self.predictions:
+            return None
+            
+        expected = self.predictions[variable]
+        error = observed_value - expected
+        
+        # Store in history
+        self.error_history.append({
+            "variable": variable,
+            "expected": expected,
+            "observed": observed_value,
+            "error": error
+        })
+        
+        # Limit history size
+        if len(self.error_history) > 1000:
+            self.error_history.pop(0)
+            
+        return error
+        
+    def get_recent_errors(self, n=10):
+        """Get the n most recent errors"""
+        return self.error_history[-n:]
+        
+    def get_average_error(self, n=10):
+        """Get the average absolute error over the last n observations"""
+        recent = self.get_recent_errors(n)
+        if not recent:
+            return 0.0
+            
+        return sum(abs(e["error"]) for e in recent) / len(recent)
+\end{lstlisting}
+
+\section{Wellbeing Assessment}
+Based on Figure 3 from the paper, we implement the wellbeing assessment components.
+
+\subsection{Wellbeing Metrics}
+
+\begin{lstlisting}[language=Python]
+class WellbeingAssessment:
+    """
+    Assesses wellbeing based on various metrics
+    """
+    
+    def __init__(self):
+        self.stress_level = 0.0
+        self.boredom_level = 0.0
+        self.wellbeing_score = 0.5  # Start at neutral
+        self.history = []
+        
+    def assess_stress(self, gos, prediction_error):
+        """
+        Assess stress level based on GOS and prediction errors
+        
+        Args:
+            gos: GlobalOrganismicState object
+            prediction_error: PredictionError object
+            
+        Returns:
+            Stress level between 0-1
+        """
+        # Factors that contribute to stress:
+        # 1. High GOS intensity indicates acute stress
+        # 2. High prediction errors indicate uncertainty
+        # 3. Duration of GOS activation
+        
+        gos_intensity = gos.intensity if gos.active else 0.0
+        avg_error = prediction_error.get_average_error(10)
+        
+        # Combine factors (weighted sum)
+        stress = 0.5 * gos_intensity + 0.5 * min(1.0, avg_error)
+        
+        # Update stress level (with smoothing)
+        self.stress_level = 0.8 * self.stress_level + 0.2 * stress
+        
+        return self.stress_level
+        
+    def assess_boredom(self, gos, prediction_error, time_without_gos):
+        """
+        Assess boredom level
+        
+        Args:
+            gos: GlobalOrganismicState object
+            prediction_error: PredictionError object
+            time_without_gos: Time units without GOS activation
+            
+        Returns:
+            Boredom level between 0-1
+        """
+        # Factors that contribute to boredom:
+        # 1. Long time without GOS activation
+        # 2. Low prediction errors (environment too predictable)
+        # 3. Low sensory variation
+        
+        # Calculate boredom factors
+        gos_inactivity = min(1.0, time_without_gos / 100.0)  # Saturate at 100 time units
+        error_factor = max(0.0, 1.0 - prediction_error.get_average_error(20))
+        
+        # Combine factors
+        boredom = 0.7 * gos_inactivity + 0.3 * error_factor
+        
+        # Update boredom level (with smoothing)
+        self.boredom_level = 0.9 * self.boredom_level + 0.1 * boredom
+        
+        return self.boredom_level
+        
+    def assess_wellbeing(self, stress, boredom, predicted_emotions):
+        """
+        Calculate overall wellbeing
+        
+        Args:
+            stress: Current stress level (0-1)
+            boredom: Current boredom level (0-1)
+            predicted_emotions: Dict of predicted emotional outcomes
+            
+        Returns:
+            Wellbeing score between 0-1
+        """
+        # Wellbeing is reduced by stress and boredom
+        wellbeing = 1.0 - 0.5 * stress - 0.3 * boredom
+        
+        # Factor in predicted emotions if available
+        if predicted_emotions:
+            avg_prediction = sum(predicted_emotions.values()) / len(predicted_emotions)
+            wellbeing = 0.7 * wellbeing + 0.3 * avg_prediction
+            
+        # Ensure value is in range [0, 1]
+        wellbeing = max(0.0, min(1.0, wellbeing))
+        
+        # Update wellbeing score (with smoothing)
+        self.wellbeing_score = 0.8 * self.wellbeing_score + 0.2 * wellbeing
+        
+        # Record history
+        self.history.append({
+            "stress": stress,
+            "boredom": boredom,
+            "wellbeing": self.wellbeing_score
+        })
+        
+        return self.wellbeing_score
+        
+    def get_wellbeing_report(self):
+        """
+        Generate a detailed wellbeing report
+        
+        Returns:
+            Dictionary with wellbeing metrics
+        """
+        return {
+            "wellbeing_score": self.wellbeing_score,
+            "stress_level": self.stress_level,
+            "boredom_level": self.boredom_level,
+            "history": self.history[-10:] if len(self.history) > 10 else self.history
+        }
+\end{lstlisting}
+
+\subsection{Decision Making Process}
+Implementing the decision-making process based on wellbeing:
+
+\subsection{Decision Making Process}
+Implementing the decision-making process based on wellbeing:
+
+\begin{lstlisting}[language=Python]
+class DecisionMaking:
+    """
+    Implements the decision-making process based on wellbeing predictions
+    """
+    
+    def __init__(self, episodic_memory, learning):
+        self.episodic_memory = episodic_memory
+        self.learning = learning
+        self.time_without_gos = 0
+        self.last_decision = None
+        self.last_reward = None
+        
+    def decide(self, gos, environment, available_actions):
+        """
+        Make a decision based on wellbeing predictions
+        
+        Args:
+            gos: GlobalOrganismicState object
+            environment: Environment object
+            available_actions: List of possible actions
+            
+        Returns:
+            The selected action
+        """
+        # Track time without GOS
+        if not gos.active:
+            self.time_without_gos += 1
+        else:
+            self.time_without_gos = 0
+            
+        # Decision process differs based on GOS activation
+        if gos.active:
+            # With active GOS, decision is focused on the dominant need
+            action_type = gos.attention_focus
+            
+            # Filter actions relevant to the focus
+            relevant_actions = [a for a in available_actions 
+                               if a.startswith(action_type)]
+            
+            if not relevant_actions:
+                # If no relevant actions, pick best available
+                selected_action = self._select_best_action(
+                    available_actions, environment)
+            else:
+                # Pick best relevant action
+                selected_action = self._select_best_action(
+                    relevant_actions, environment)
+        else:
+            # Without GOS, use broader wellbeing prediction
+            selected_action = self._select_best_action(
+                available_actions, environment)
+            
+        # Store the decision for later learning
+        self.last_decision = selected_action
+        
+        return selected_action
+        
+    def _select_best_action(self, actions, environment):
+        """
+        Select the action with the best predicted wellbeing outcome
+        """
+        # No actions available
+        if not actions:
+            return None
+            
+        # Get current environment state as stimulus
+        current_state = str(environment.get_state())
+        
+        # Use learning model to select best response
+        return self.learning.get_best_response(current_state, actions)
+        
+    def update_from_reward(self, reward):
+        """
+        Update learning from received reward
+        
+        Args:
+            reward: Reward value (-1 to 1)
+        """
+        if self.last_decision is not None:
+            # Update learning
+            current_state = str(environment.get_state())
+            self.learning.update_association(
+                current_state, self.last_decision, reward)
+            
+            # Update episodic memory
+            self.episodic_memory.store(
+                what=self.last_decision,
+                where=str(environment.get_state()),
+                when=environment.time,
+                emotion=reward
+            )
+            
+            self.last_reward = reward
+\end{lstlisting}
+
+\section{Evolution and Adaptation}
+The genetic algorithm enables the digital twins to adapt over generations, reflecting the evolutionary process.
+
+\subsection{Genetic Algorithm Components}
+First, we define the gene structure for our digital twins:
+
+\begin{lstlisting}[language=Python]
+class SalmonGenes:
+    """
+    Represents the genetic makeup of a salmon digital twin
+    """
+    
+    def __init__(self):
+        # Genes for neuronal response thresholds
+        self.thresholds = {
+            "temperature": np.random.uniform(5, 15),
+            "oxygen_level": np.random.uniform(4, 10),
+            "food_availability": np.random.uniform(0.1, 0.5),
+            "light_intensity": np.random.uniform(20, 100),
+            "noise_level": np.random.uniform(0.1, 1.0),
+            "social_density": np.random.uniform(10, 100)
+        }
+        
+        # Genes for neuronal response sensitivities
+        self.sensitivities = {
+            "temperature": np.random.uniform(0.1, 2.0),
+            "oxygen_level": np.random.uniform(0.5, 5.0),
+            "food_availability": np.random.uniform(1.0, 10.0),
+            "light_intensity": np.random.uniform(0.01, 0.2),
+            "noise_level": np.random.uniform(-10.0, -1.0),
+            "social_density": np.random.uniform(-1.0, 1.0)
+        }
+        
+        # Genes for hormonal modulation
+        self.hormone_base_levels = {
+            "growth": np.random.uniform(0.5, 1.5),
+            "defence": np.random.uniform(0.5, 1.5),
+            "reproduction": np.random.uniform(0.5, 1.5),
+            "respiration": np.random.uniform(0.5, 1.5),
+            "exploration": np.random.uniform(0.5, 1.5)
+        }
+        
+        # Genes for attention threshold
+        self.attention_threshold = np.random.uniform(0.2, 0.5)
+        
+    def mutate(self, mutation_rate=0.1, mutation_size=0.2):
+        """
+        Mutate genes with given probability and magnitude
+        
+        Args:
+            mutation_rate: Probability of each gene mutating
+            mutation_size: Relative size of mutation
+        """
+        # Mutate thresholds
+        for key in self.thresholds:
+            if np.random.random() < mutation_rate:
+                # Add random change
+                change = np.random.normal(0, self.thresholds[key] * mutation_size)
+                self.thresholds[key] += change
+                
+        # Mutate sensitivities
+        for key in self.sensitivities:
+            if np.random.random() < mutation_rate:
+                change = np.random.normal(0, abs(self.sensitivities[key]) * mutation_size)
+                self.sensitivities[key] += change
+                
+        # Mutate hormone base levels
+        for key in self.hormone_base_levels:
+            if np.random.random() < mutation_rate:
+                change = np.random.normal(0, self.hormone_base_levels[key] * mutation_size)
+                self.hormone_base_levels[key] += change
+                
+        # Mutate attention threshold
+        if np.random.random() < mutation_rate:
+            change = np.random.normal(0, self.attention_threshold * mutation_size)
+            self.attention_threshold += change
+            self.attention_threshold = max(0.1, min(0.9, self.attention_threshold))
+\end{lstlisting}
+
+\subsection{Crossover and Selection}
+Implementing crossover for genetic mixing and selection for evolution:
+
+\begin{lstlisting}[language=Python]
+def crossover(parent1, parent2):
+    """
+    Create offspring by crossing over genes from two parents
+    
+    Args:
+        parent1, parent2: SalmonGenes objects
+        
+    Returns:
+        New SalmonGenes object
+    """
+    child = SalmonGenes()
+    
+    # Crossover thresholds
+    for key in child.thresholds:
+        # 50% chance of inheriting from each parent
+        if np.random.random() < 0.5:
+            child.thresholds[key] = parent1.thresholds[key]
+        else:
+            child.thresholds[key] = parent2.thresholds[key]
+            
+    # Crossover sensitivities
+    for key in child.sensitivities:
+        if np.random.random() < 0.5:
+            child.sensitivities[key] = parent1.sensitivities[key]
+        else:
+            child.sensitivities[key] = parent2.sensitivities[key]
+            
+    # Crossover hormone base levels
+    for key in child.hormone_base_levels:
+        if np.random.random() < 0.5:
+            child.hormone_base_levels[key] = parent1.hormone_base_levels[key]
+        else:
+            child.hormone_base_levels[key] = parent2.hormone_base_levels[key]
+            
+    # Crossover attention threshold
+    if np.random.random() < 0.5:
+        child.attention_threshold = parent1.attention_threshold
+    else:
+        child.attention_threshold = parent2.attention_threshold
+        
+    return child
+    
+def select_parents(population, fitness_scores, num_parents):
+    """
+    Select parents using tournament selection
+    
+    Args:
+        population: List of SalmonGenes objects
+        fitness_scores: List of fitness values matching population
+        num_parents: Number of parents to select
+        
+    Returns:
+        List of selected parent indexes
+    """
+    selected = []
+    
+    for _ in range(num_parents):
+        # Tournament selection
+        tournament_size = 3
+        tournament = np.random.choice(
+            len(population), 
+            size=tournament_size, 
+            replace=False)
+            
+        # Find the winner (highest fitness)
+        winner_idx = tournament[0]
+        winner_fitness = fitness_scores[tournament[0]]
+        
+        for idx in tournament[1:]:
+            if fitness_scores[idx] > winner_fitness:
+                winner_idx = idx
+                winner_fitness = fitness_scores[idx]
+                
+        selected.append(winner_idx)
+        
+    return selected
+\end{lstlisting}
+
+\subsection{Evolutionary Process}
+Putting together the evolutionary process:
+
+\begin{lstlisting}[language=Python]
+class GeneticAlgorithm:
+    """
+    Implements the genetic algorithm for evolving digital twins
+    """
+    
+    def __init__(self, pop_size=50, mutation_rate=0.1):
+        self.pop_size = pop_size
+        self.mutation_rate = mutation_rate
+        self.population = [SalmonGenes() for _ in range(pop_size)]
+        self.fitness_scores = np.zeros(pop_size)
+        self.generation = 0
+        
+    def evolve(self, fitness_function):
+        """
+        Evolve the population for one generation
+        
+        Args:
+            fitness_function: Function that takes SalmonGenes and returns fitness
+        """
+        # Evaluate fitness
+        for i, genes in enumerate(self.population):
+            self.fitness_scores[i] = fitness_function(genes)
+            
+        # Create new population
+        new_population = []
+        
+        # Elitism: keep the best individual
+        best_idx = np.argmax(self.fitness_scores)
+        new_population.append(self.population[best_idx])
+        
+        # Select parents and create offspring
+        while len(new_population) < self.pop_size:
+            # Select parents
+            parent_indices = select_parents(
+                self.population, self.fitness_scores, 2)
+                
+            # Create offspring
+            child = crossover(
+                self.population[parent_indices[0]],
+                self.population[parent_indices[1]]
+            )
+            
+            # Apply mutation
+            child.mutate(self.mutation_rate)
+            
+            # Add to new population
+            new_population.append(child)
+            
+        # Replace old population
+        self.population = new_population
+        self.generation += 1
+        
+        # Return statistics
+        return {
+            "generation": self.generation,
+            "best_fitness": np.max(self.fitness_scores),
+            "avg_fitness": np.mean(self.fitness_scores),
+            "worst_fitness": np.min(self.fitness_scores)
+        }
+\end{lstlisting}
+
+\subsection{Fitness Function Example}
+An example fitness function for evaluating digital twins:
+
+\begin{lstlisting}[language=Python]
+def evaluate_twin_fitness(genes, num_trials=5):
+    """
+    Evaluate fitness of a digital twin with given genes
+    
+    Args:
+        genes: SalmonGenes object
+        num_trials: Number of simulation trials to run
+        
+    Returns:
+        Fitness score
+    """
+    total_wellbeing = 0
+    total_lifespan = 0
+    
+    for _ in range(num_trials):
+        # Create digital twin with these genes
+        twin = create_digital_twin_from_genes(genes)
+        
+        # Create environment
+        env = Environment()
+        
+        # Run simulation until death or max time
+        max_time = 1000
+        for t in range(max_time):
+            # Update environment
+            env.step()
+            
+            # Update twin
+            twin.update(env)
+            
+            # Check if twin died
+            if twin.is_dead():
+                break
+                
+        # Record results
+        lifespan = t
+        total_lifespan += lifespan
+        total_wellbeing += twin.wellbeing_assessment.wellbeing_score * lifespan
+        
+    # Fitness is a combination of wellbeing and lifespan
+    avg_wellbeing = total_wellbeing / total_lifespan if total_lifespan > 0 else 0
+    avg_lifespan = total_lifespan / num_trials
+    
+    # Weight wellbeing more than lifespan
+    fitness = 0.7 * avg_wellbeing + 0.3 * (avg_lifespan / max_time)
+    
+    return fitness
+\end{lstlisting}
+
+\section{Complete Digital Twin}
+Now we integrate all components into a complete digital twin.
+
+\subsection{Digital Twin Architecture}
+
+\begin{lstlisting}[language=Python]
+class DigitalTwin:
+    """
+    Complete implementation of a salmon digital twin
+    """
+    
+    def __init__(self, genes=None):
+        # Initialize genes
+        self.genes = genes or SalmonGenes()
+        
+        # Create basic needs
+        self.basic_needs = BasicNeeds()
+        
+        # Create sensors from genes
+        self.sensors = self._create_sensors()
+        
+        # Create survival circuits
+        self.survival_circuits = self._create_survival_circuits()
+        
+        # Create global organismic state
+        self.gos = GlobalOrganismicState()
+        
+        # Create memory and learning
+        self.episodic_memory = EpisodicMemory()
+        self.learning = Learning()
+        
+        # Create prediction system
+        self.prediction_error = PredictionError()
+        
+        # Create decision making
+        self.decision_making = DecisionMaking(
+            self.episodic_memory, self.learning)
+        
+        # Create wellbeing assessment
+        self.wellbeing_assessment = WellbeingAssessment()
+        
+        # State variables
+        self.age = 0
+        self.health = 1.0
+        self._dead = False
+        
+    def _create_sensors(self):
+        """Create sensors based on genes"""
+        sensors = {}
+        
+        # Create a sensor for each input type
+        for input_name, threshold in self.genes.thresholds.items():
+            sensitivity = self.genes.sensitivities[input_name]
+            response = NeuronalResponse(threshold, sensitivity)
+            sensors[input_name] = Sensor(input_name, response)
+            
+        return sensors
+        
+    def _create_survival_circuits(self):
+        """Create survival circuits based on genes"""
+        circuits = []
+        
+        # Create growth circuit
+        growth = SurvivalCircuit("growth")
+        growth.add_sensor(self.sensors["temperature"])
+        growth.add_sensor(self.sensors["food_availability"])
+        growth.set_hormone_modulation(self.genes.hormone_base_levels["growth"])
+        circuits.append(growth)
+        
+        # Create defence circuit
+        defence = SurvivalCircuit("defence")
+        defence.add_sensor(self.sensors["noise_level"])
+        defence.set_hormone_modulation(self.genes.hormone_base_levels["defence"])
+        circuits.append(defence)
+        
+        # Create reproduction circuit
+        reproduction = SurvivalCircuit("reproduction")
+        reproduction.set_hormone_modulation(
+            self.genes.hormone_base_levels["reproduction"])
+        circuits.append(reproduction)
+        
+        # Create respiration circuit
+        respiration = SurvivalCircuit("respiration")
+        respiration.add_sensor(self.sensors["oxygen_level"])
+        respiration.set_hormone_modulation(
+            self.genes.hormone_base_levels["respiration"])
+        circuits.append(respiration)
+        
+        # Create exploration circuit
+        exploration = SurvivalCircuit("exploration")
+        exploration.add_sensor(self.sensors["light_intensity"])
+        exploration.set_hormone_modulation(
+            self.genes.hormone_base_levels["exploration"])
+        circuits.append(exploration)
+        
+        return circuits
+        
+    def update(self, environment):
+        """
+        Update the digital twin state based on environment
+        
+        Args:
+            environment: Environment object
+        """
+        if self._dead:
+            return
+            
+        # Increment age
+        self.age += 1
+        
+        # Process inputs through survival circuits
+        for circuit in self.survival_circuits:
+            circuit.process_inputs(environment)
+            
+        # Update global organismic state
+        self.gos.update(
+            self.survival_circuits, 
+            attention_threshold=self.genes.attention_threshold
+        )
+        
+        # Check for prediction errors
+        env_state = environment.get_state()
+        for var, value in env_state.items():
+            error = self.prediction_error.calculate_error(var, value)
+            
+        # Assess wellbeing
+        stress = self.wellbeing_assessment.assess_stress(
+            self.gos, self.prediction_error)
+            
+        boredom = self.wellbeing_assessment.assess_boredom(
+            self.gos, self.prediction_error, 
+            self.decision_making.time_without_gos)
+            
+        # Get predicted emotions from memory
+        predicted_emotions = {}
+        # TODO: Implement emotion prediction
+        
+        wellbeing = self.wellbeing_assessment.assess_wellbeing(
+            stress, boredom, predicted_emotions)
+            
+        # Make decisions
+        available_actions = self._get_available_actions(environment)
+        action = self.decision_making.decide(
+            self.gos, environment, available_actions)
+            
+        # Execute action
+        self._execute_action(action, environment)
+        
+        # Update health based on wellbeing
+        if wellbeing < 0.2:
+            # Poor wellbeing decreases health
+            self.health -= 0.01
+        elif wellbeing > 0.8:
+            # Good wellbeing increases health (up to 1.0)
+            self.health = min(1.0, self.health + 0.005)
+            
+        # Check if dead
+        if self.health <= 0:
+            self._dead = True
+            
+    def is_dead(self):
+        """Check if the twin is dead"""
+        return self._dead
+        
+    def _get_available_actions(self, environment):
+        """Get available actions based on environment"""
+        # Simplified actions
+        return [
+            "feed",
+            "hide",
+            "explore",
+            "rest",
+            "move_to_oxygen"
+        ]
+        
+    def _execute_action(self, action, environment):
+        """Execute selected action"""
+        # In a real implementation, this would affect the environment
+        # and provide feedback for learning
+        reward = 0.0
+        
+        if action == "feed" and environment.food_availability > 0.5:
+            reward = 0.5
+        elif action == "hide" and environment.noise_level > 0.7:
+            reward = 0.4
+        elif action == "move_to_oxygen" and environment.oxygen_level < 6.0:
+            reward = 0.6
+        elif action == "explore" and self.decision_making.time_without_gos > 50:
+            reward = 0.3
+            
+        # Update learning
+        self.decision_making.update_from_reward(reward)
+        
+    def get_wellbeing_report(self):
+        """
+        Get a complete wellbeing report
+        
+        Returns:
+            Dictionary with wellbeing information
+        """
+        report = self.wellbeing_assessment.get_wellbeing_report()
+        report.update({
+            "age": self.age,
+            "health": self.health,
+            "gos_active": self.gos.active,
+            "attention_focus": self.gos.attention_focus,
+            "prediction_errors": self.prediction_error.get_average_error(),
+            "time_without_gos": self.decision_making.time_without_gos
+        })
+        
+        return report
+\end{lstlisting}
+
+\subsection{Factory Function}
+A factory function to create digital twins from genes:
+
+\begin{lstlisting}[language=Python]
+def create_digital_twin_from_genes(genes):
+    """
+    Create a digital twin from specific genes
+    
+    Args:
+        genes: SalmonGenes object
+        
+    Returns:
+        DigitalTwin object
+    """
+    return DigitalTwin(genes)
+\end{lstlisting}
+
+\subsection{Population Simulation}
+Running a population of digital twins:
+
+\begin{lstlisting}[language=Python]
+def simulate_population(population_size=10, simulation_steps=1000):
+    """
+    Simulate a population of digital twins
+    
+    Args:
+        population_size: Number of twins to simulate
+        simulation_steps: Number of time steps to run
+        
+    Returns:
+        List of reports from all twins
+    """
+    # Create population
+    twins = [DigitalTwin() for _ in range(population_size)]
+    
+    # Create environment
+    env = Environment()
+    
+    # Storage for reports
+    reports = []
+    
+    # Run simulation
+    for step in range(simulation_steps):
+        # Update environment
+        env.step()
+        
+        # Update each twin
+        step_reports = []
+        for twin in twins:
+            if not twin.is_dead():
+                twin.update(env)
+                report = twin.get_wellbeing_report()
+                report["step"] = step
+                step_reports.append(report)
+                
+        reports.append({
+            "step": step,
+            "environment": env.get_state(),
+            "twin_reports": step_reports
+        })
+        
+    return reports
+\end{lstlisting}
+
+\section{Validation and Analysis}
+In this section, we implement methods to validate and analyze the digital twin.
+
+\subsection{Visualization Tools}
+
+\begin{lstlisting}[language=Python]
+def plot_wellbeing_over_time(reports):
+    """
+    Plot wellbeing metrics over time
+    
+    Args:
+        reports: List of reports from simulation
+    """
+    steps = [r["step"] for r in reports]
+    
+    # Extract average metrics at each time step
+    avg_wellbeing = []
+    avg_stress = []
+    avg_boredom = []
+    
+    for report in reports:
+        twin_reports = report["twin_reports"]
+        if twin_reports:
+            wellbeing = [r["wellbeing_score"] for r in twin_reports]
+            stress = [r["stress_level"] for r in twin_reports]
+            boredom = [r["boredom_level"] for r in twin_reports]
+            
+            avg_wellbeing.append(np.mean(wellbeing))
+            avg_stress.append(np.mean(stress))
+            avg_boredom.append(np.mean(boredom))
+        else:
+            # No living twins
+            avg_wellbeing.append(np.nan)
+            avg_stress.append(np.nan)
+            avg_boredom.append(np.nan)
+    
+    # Plot
+    plt.figure(figsize=(12, 6))
+    
+    plt.plot(steps, avg_wellbeing, label="Wellbeing", color="green")
+    plt.plot(steps, avg_stress, label="Stress", color="red")
+    plt.plot(steps, avg_boredom, label="Boredom", color="blue")
+    
+    plt.xlabel("Time Step")
+    plt.ylabel("Level")
+    plt.title("Population Wellbeing Metrics Over Time")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+\end{lstlisting}
+
+\subsection{Testing Scenarios}
+Implementing scenarios to test digital twin responses:
+
+\begin{lstlisting}[language=Python]
+def test_stress_scenario():
+    """
+    Test digital twin response to stressful scenario
+    """
+    # Create twin
+    twin = DigitalTwin()
+    
+    # Create environment with baseline conditions
+    env = Environment(
+        temperature=12,
+        oxygen_level=9,
+        light_intensity=100,
+        food_availability=1.0,
+        social_density=50,
+        noise_level=0.1
+    )
+    
+    # Simulate baseline period
+    baseline_reports = []
+    for _ in range(100):
+        env.step()
+        twin.update(env)
+        baseline_reports.append(twin.get_wellbeing_report())
+    
+    # Introduce stressor - high noise and low oxygen
+    env.noise_level = 0.9
+    env.oxygen_level = 5.0
+    
+    # Simulate stress period
+    stress_reports = []
+    for _ in range(100):
+        env.step()
+        twin.update(env)
+        stress_reports.append(twin.get_wellbeing_report())
+    
+    # Recovery period
+    env.noise_level = 0.1
+    env.oxygen_level = 9.0
+    
+    recovery_reports = []
+    for _ in range(100):
+        env.step()
+        twin.update(env)
+        recovery_reports.append(twin.get_wellbeing_report())
+    
+    # Analyze results
+    baseline_stress = np.mean([r["stress_level"] for r in baseline_reports])
+    stress_stress = np.mean([r["stress_level"] for r in stress_reports])
+    recovery_stress = np.mean([r["stress_level"] for r in recovery_reports])
+    
+    print(f"Baseline stress: {baseline_stress:.2f}")
+    print(f"Stress period: {stress_stress:.2f}")
+    print(f"Recovery period: {recovery_stress:.2f}")
+    
+    # Plot results
+    all_reports = baseline_reports + stress_reports + recovery_reports
+    steps = range(len(all_reports))
+    stress = [r["stress_level"] for r in all_reports]
+    wellbeing = [r["wellbeing_score"] for r in all_reports]
+    
+    plt.figure(figsize=(12, 6))
+    
+    plt.plot(steps, stress, label="Stress", color="red")
+    plt.plot(steps, wellbeing, label="Wellbeing", color="green")
+    
+    plt.axvline(x=100, color="gray", linestyle="--")
+    plt.axvline(x=200, color="gray", linestyle="--")
+    
+    plt.text(50, 0.9, "Baseline", ha="center")
+    plt.text(150, 0.9, "Stress", ha="center")
+    plt.text(250, 0.9, "Recovery", ha="center")
+    
+    plt.xlabel("Time Step")
+    plt.ylabel("Level")
+    plt.title("Stress Response Test")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+\end{lstlisting}
+
+\subsection{Validation Functions}
+Functions to validate digital twin behavior against empirical data:
+
+\begin{lstlisting}[language=Python]
+def validate_against_empirical(twin_reports, empirical_data):
+    """
+    Compare digital twin predictions with empirical data
+    
+    Args:
+        twin_reports: Reports from digital twin simulation
+        empirical_data: Dictionary with empirical measurements
+        
+    Returns:
+        Dictionary with validation metrics
+    """
+    # Extract metrics from twin reports
+    twin_stress = np.array([r["stress_level"] for r in twin_reports])
+    twin_wellbeing = np.array([r["wellbeing_score"] for r in twin_reports])
+    
+    # Compare with empirical data
+    empirical_stress = np.array(empirical_data["stress_measurements"])
+    empirical_wellbeing = np.array(empirical_data["wellbeing_indicators"])
+    
+    # Compute correlation
+    stress_correlation = np.corrcoef(twin_stress, empirical_stress)[0, 1]
+    wellbeing_correlation = np.corrcoef(twin_wellbeing, empirical_wellbeing)[0, 1]
+    
+    # Compute mean absolute error
+    stress_mae = np.mean(np.abs(twin_stress - empirical_stress))
+    wellbeing_mae = np.mean(np.abs(twin_wellbeing - empirical_wellbeing))
+    
+    # Return validation metrics
+    return {
+        "stress_correlation": stress_correlation,
+        "wellbeing_correlation": wellbeing_correlation,
+        "stress_mae": stress_mae,
+        "wellbeing_mae": wellbeing_mae
+    }
+\end{lstlisting}
+
+\section{Practical Applications}
+In this section, we provide practical examples of using the digital twin for real-world applications.
+
+
+\subsection{Early Warning System}
+Implementing an early warning system for detecting wellbeing issues:
+
+\begin{lstlisting}[language=Python]
+class WellbeingMonitor:
+    """
+    Monitor that provides early warnings about wellbeing issues
+    """
+    
+    def __init__(self, population, warning_thresholds=None):
+        self.population = population  # List of DigitalTwin objects
+        
+        # Default warning thresholds
+        self.thresholds = warning_thresholds or {
+            "high_stress": 0.7,
+            "chronic_stress": 0.6,
+            "high_boredom": 0.7,
+            "low_wellbeing": 0.3
+        }
+        
+        self.alerts = []
+        
+    def update(self, environment):
+        """
+        Update all twins and check for warnings
+        
+        Args:
+            environment: Current environment
+            
+        Returns:
+            List of alerts
+        """
+        reports = []
+        
+        # Update each twin
+        for twin in self.population:
+            if not twin.is_dead():
+                twin.update(environment)
+                reports.append(twin.get_wellbeing_report())
+                
+        # Check for warnings
+        new_alerts = self._check_warnings(reports)
+        self.alerts.extend(new_alerts)
+        
+        return new_alerts
+        
+    def _check_warnings(self, reports):
+        """Check for warning conditions in the reports"""
+        alerts = []
+        
+        # Check for high stress
+        high_stress_count = sum(1 for r in reports 
+                              if r["stress_level"] >= self.thresholds["high_stress"])
+        if high_stress_count > len(reports) * 0.3:  # >30% of population
+            alerts.append({
+                "type": "high_stress",
+                "severity": "high",
+                "affected_percentage": high_stress_count / len(reports) * 100,
+                "description": "High stress levels detected in significant portion of population"
+            })
+        
+        # Check for chronic stress (sustained mid-level stress)
+        chronic_stress_count = sum(1 for r in reports
+                                if r["stress_level"] >= self.thresholds["chronic_stress"])
+        if chronic_stress_count > len(reports) * 0.5:  # >50% of population
+            alerts.append({
+                "type": "chronic_stress",
+                "severity": "medium",
+                "affected_percentage": chronic_stress_count / len(reports) * 100,
+                "description": "Chronic stress detected - may lead to health issues"
+            })
+        
+        # Check for high boredom
+        high_boredom_count = sum(1 for r in reports
+                               if r["boredom_level"] >= self.thresholds["high_boredom"])
+        if high_boredom_count > len(reports) * 0.4:  # >40% of population
+            alerts.append({
+                "type": "high_boredom",
+                "severity": "medium",
+                "affected_percentage": high_boredom_count / len(reports) * 100,
+                "description": "High boredom levels detected - may impair learning and development"
+            })
+        
+        # Check for low wellbeing
+        low_wellbeing_count = sum(1 for r in reports
+                                if r["wellbeing_score"] <= self.thresholds["low_wellbeing"])
+        if low_wellbeing_count > len(reports) * 0.3:  # >30% of population
+            alerts.append({
+                "type": "low_wellbeing",
+                "severity": "high",
+                "affected_percentage": low_wellbeing_count / len(reports) * 100,
+                "description": "Low wellbeing detected - immediate attention required"
+            })
+            
+        return alerts
+\end{lstlisting}
+
+\subsection{Facility Optimization}
+Using the digital twin to optimize aquaculture facility parameters:
+
+\begin{lstlisting}[language=Python]
+def optimize_facility_parameters(parameter_ranges, population_size=20, 
+                               simulation_days=30, steps_per_day=24):
+    """
+    Find optimal facility parameters for salmon wellbeing
+    
+    Args:
+        parameter_ranges: Dictionary with min/max for each parameter
+        population_size: Number of digital twins to simulate
+        simulation_days: Number of days to simulate
+        steps_per_day: Simulation steps per day
+        
+    Returns:
+        Dictionary with optimal parameter values
+    """
+    best_score = -float('inf')
+    best_params = None
+    
+    # Number of optimization iterations
+    iterations = 50
+    
+    for iteration in range(iterations):
+        # Sample parameters from ranges
+        params = {}
+        for param, (min_val, max_val) in parameter_ranges.items():
+            params[param] = np.random.uniform(min_val, max_val)
+            
+        print(f"Testing parameters: {params}")
+        
+        # Create environment with these parameters
+        env = Environment(
+            temperature=params.get("temperature", 12),
+            oxygen_level=params.get("oxygen_level", 8.5),
+            light_intensity=params.get("light_intensity", 100),
+            food_availability=params.get("food_availability", 1.0),
+            social_density=params.get("social_density", 50),
+            noise_level=params.get("noise_level", 0.1)
+        )
+        
+        # Create population
+        twins = [DigitalTwin() for _ in range(population_size)]
+        
+        # Run simulation
+        total_steps = simulation_days * steps_per_day
+        wellbeing_scores = []
+        stress_scores = []
+        mortality = 0
+        
+        for step in range(total_steps):
+            # Update environment (with small variation)
+            env.step()
+            
+            # Update each twin
+            for twin in twins:
+                if not twin.is_dead():
+                    twin.update(env)
+                    report = twin.get_wellbeing_report()
+                    wellbeing_scores.append(report["wellbeing_score"])
+                    stress_scores.append(report["stress_level"])
+                else:
+                    mortality += 1
+                    
+        # Calculate performance score
+        avg_wellbeing = np.mean(wellbeing_scores) if wellbeing_scores else 0
+        avg_stress = np.mean(stress_scores) if stress_scores else 1
+        survival_rate = 1 - (mortality / (population_size * total_steps))
+        
+        # Combined score (higher is better)
+        score = (0.5 * avg_wellbeing) + (0.3 * (1 - avg_stress)) + (0.2 * survival_rate)
+        
+        print(f"Score: {score:.4f} (wellbeing: {avg_wellbeing:.2f}, " +
+              f"stress: {avg_stress:.2f}, survival: {survival_rate:.2f})")
+        
+        # Update best parameters
+        if score > best_score:
+            best_score = score
+            best_params = params.copy()
+            
+    print(f"\nOptimal parameters found: {best_params}")
+    print(f"Optimization score: {best_score:.4f}")
+    
+    return best_params
+\end{lstlisting}
+
+\subsection{Policy Analysis}
+Analyzing the impact of different husbandry policies:
+
+\begin{lstlisting}[language=Python]
+def analyze_husbandry_policy(policy, population_size=50, simulation_days=60):
+    """
+    Analyze the impact of a husbandry policy on salmon wellbeing
+    
+    Args:
+        policy: Dictionary defining the policy
+        population_size: Number of digital twins to simulate
+        simulation_days: Number of days to simulate
+        
+    Returns:
+        Dictionary with analysis results
+    """
+    # Create population
+    twins = [DigitalTwin() for _ in range(population_size)]
+    
+    # Create environment
+    env = Environment()
+    
+    # Policy implementation
+    feeding_schedule = policy.get("feeding_schedule", "regular")  # regular, variable
+    light_regime = policy.get("light_regime", "natural")  # natural, constant, gradual
+    handling_frequency = policy.get("handling_frequency", "low")  # low, medium, high
+    
+    # Simulation parameters
+    steps_per_day = 24
+    total_steps = simulation_days * steps_per_day
+    
+    # Storage for metrics
+    daily_metrics = []
+    
+    # Run simulation
+    for day in range(simulation_days):
+        day_metrics = {
+            "day": day,
+            "wellbeing": [],
+            "stress": [],
+            "boredom": [],
+            "alive_count": 0
+        }
+        
+        for step in range(steps_per_day):
+            current_step = day * steps_per_day + step
+            
+            # Apply policy
+            self._apply_policy(env, policy, day, step)
+            
+            # Update environment
+            env.step()
+            
+            # Handle scheduled events
+            if handling_frequency == "high" and current_step % 48 == 0:
+                # Simulate handling stress
+                env.noise_level = 0.9
+            elif handling_frequency == "medium" and current_step % 120 == 0:
+                env.noise_level = 0.9
+            elif handling_frequency == "low" and current_step % 336 == 0:
+                env.noise_level = 0.9
+            else:
+                # Return to baseline
+                env.noise_level = policy.get("baseline_noise", 0.1)
+                
+            # Update all twins
+            for twin in twins:
+                if not twin.is_dead():
+                    twin.update(env)
+                    report = twin.get_wellbeing_report()
+                    
+                    # Store metrics
+                    day_metrics["wellbeing"].append(report["wellbeing_score"])
+                    day_metrics["stress"].append(report["stress_level"])
+                    day_metrics["boredom"].append(report["boredom_level"])
+                    day_metrics["alive_count"] += 1
+                    
+        # Calculate daily averages
+        day_metrics["avg_wellbeing"] = np.mean(day_metrics["wellbeing"]) if day_metrics["wellbeing"] else 0
+        day_metrics["avg_stress"] = np.mean(day_metrics["stress"]) if day_metrics["stress"] else 0
+        day_metrics["avg_boredom"] = np.mean(day_metrics["boredom"]) if day_metrics["boredom"] else 0
+        day_metrics["survival_rate"] = day_metrics["alive_count"] / (population_size * steps_per_day)
+        
+        daily_metrics.append(day_metrics)
+        
+    # Calculate overall metrics
+    avg_wellbeing = np.mean([d["avg_wellbeing"] for d in daily_metrics])
+    avg_stress = np.mean([d["avg_stress"] for d in daily_metrics])
+    avg_boredom = np.mean([d["avg_boredom"] for d in daily_metrics])
+    final_survival = daily_metrics[-1]["survival_rate"] if daily_metrics else 0
+    
+    # Prepare report
+    report = {
+        "policy": policy,
+        "avg_wellbeing": avg_wellbeing,
+        "avg_stress": avg_stress,
+        "avg_boredom": avg_boredom,
+        "final_survival_rate": final_survival,
+        "daily_metrics": daily_metrics
+    }
+    
+    return report
+    
+def _apply_policy(env, policy, day, hour):
+    """Apply policy effects to environment"""
+    # Feeding schedule
+    feeding_schedule = policy.get("feeding_schedule", "regular")
+    if feeding_schedule == "regular":
+        # Regular feeding at fixed times
+        if hour == 8 or hour == 16:
+            env.food_availability = 1.0
+        else:
+            env.food_availability = 0.1
+    elif feeding_schedule == "variable":
+        # Variable feeding (unpredictable)
+        if hour == (day % 24) or hour == ((day + 12) % 24):
+            env.food_availability = 1.0
+        else:
+            env.food_availability = 0.1
+            
+    # Light regime
+    light_regime = policy.get("light_regime", "natural")
+    if light_regime == "natural":
+        # Natural light cycle
+        env.light_intensity = 100 * np.sin(np.pi * hour / 12) ** 2
+    elif light_regime == "constant":
+        # Constant light
+        env.light_intensity = 100
+    elif light_regime == "gradual":
+        # Gradual changes
+        if hour < 6:
+            env.light_intensity = hour * 16.67  # 0 to 100 over 6 hours
+        elif hour < 18:
+            env.light_intensity = 100
+        else:
+            env.light_intensity = 100 - ((hour - 18) * 16.67)  # 100 to 0 over 6 hours
+\end{lstlisting}
+
+\subsection{Integrating with Environmental Sensors}
+Framework for integrating digital twins with real-time sensor data:
+
+\begin{lstlisting}[language=Python]
+class SensorIntegration:
+    """
+    Integration with real-time environmental sensors
+    """
+    
+    def __init__(self, sensor_config, twins):
+        self.sensor_config = sensor_config  # Mapping of sensor IDs to parameters
+        self.twins = twins
+        self.last_readings = {}
+        self.history = []
+        
+    def process_sensor_data(self, sensor_readings):
+        """
+        Process incoming sensor data
+        
+        Args:
+            sensor_readings: Dictionary with sensor readings
+            
+        Returns:
+            List of alerts
+        """
+        # Store readings
+        self.last_readings = sensor_readings
+        self.history.append({
+            "timestamp": time.time(),
+            "readings": sensor_readings.copy()
+        })
+        
+        # Convert sensor readings to environment parameters
+        env_params = self._convert_to_environment(sensor_readings)
+        
+        # Create environment
+        env = Environment(**env_params)
+        
+        # Update twins and check for warnings
+        monitor = WellbeingMonitor(self.twins)
+        alerts = monitor.update(env)
+        
+        return alerts
+        
+    def _convert_to_environment(self, sensor_readings):
+        """Convert raw sensor readings to environment parameters"""
+        env_params = {}
+        
+        # Map sensor readings to environment parameters
+        for sensor_id, value in sensor_readings.items():
+            if sensor_id in self.sensor_config:
+                param = self.sensor_config[sensor_id]["parameter"]
+                
+                # Apply any conversion formula
+                if "conversion" in self.sensor_config[sensor_id]:
+                    conversion = self.sensor_config[sensor_id]["conversion"]
+                    if conversion == "linear":
+                        a = self.sensor_config[sensor_id].get("a", 1.0)
+                        b = self.sensor_config[sensor_id].get("b", 0.0)
+                        value = a * value + b
+                
+                env_params[param] = value
+                
+        return env_params
+        
+    def get_history(self, start_time=None, end_time=None):
+        """
+        Get historical data within time range
+        
+        Args:
+            start_time: Start timestamp (or None for all)
+            end_time: End timestamp (or None for all)
+            
+        Returns:
+            List of historical readings
+        """
+        filtered = []
+        
+        for record in self.history:
+            timestamp = record["timestamp"]
+            if (start_time is None or timestamp >= start_time) and \
+               (end_time is None or timestamp <= end_time):
+                filtered.append(record)
+                
+        return filtered
+\end{lstlisting}
+
+\section{Discussion and Future Directions}
+\subsection{Limitations of the Current Approach}
+While the digital twin provides valuable insights, several limitations should be acknowledged:
+
+\begin{itemize}
+    \item \textbf{Simplification of Biology:} The model simplifies complex biological processes that may be important for accurate wellbeing prediction.
+    
+    \item \textbf{Parameter Uncertainty:} Many parameters (e.g., neuronal response sensitivities) are difficult to calibrate against real salmon.
+    
+    \item \textbf{Cognitive Assumptions:} The implementation makes assumptions about salmon cognition that may need refinement as research advances.
+    
+    \item \textbf{Validation Challenges:} Validating subjective states like wellbeing against empirical data presents methodological challenges.
+\end{itemize}
+
+\subsection{Future Research Directions}
+Several promising research directions could enhance the digital twin approach:
+
+\begin{itemize}
+    \item \textbf{Integration with Physiological Models:} Incorporating more detailed physiological models would improve prediction accuracy.
+    
+    \item \textbf{Individual Variation:} Expanding the representation of individual variation in neuronal responses and behavior.
+    
+    \item \textbf{Social Dynamics:} Including social interactions and hierarchies within the salmon population.
+    
+    \item \textbf{Explainable AI:} Developing methods to better explain the relationship between environmental factors and wellbeing outcomes.
+    
+    \item \textbf{Model Validation:} Conducting targeted experiments to validate specific aspects of the digital twin predictions.
+\end{itemize}
+
+\subsection{Ethical Considerations}
+The development and use of digital twins for salmon wellbeing raises several ethical considerations:
+
+\begin{itemize}
+    \item \textbf{Reliability:} Ensuring the reliability of digital twin predictions before using them to make decisions about real animals.
+    
+    \item \textbf{Transparency:} Being transparent about model assumptions and limitations when reporting results.
+    
+    \item \textbf{Balance:} Balancing economic considerations with animal welfare in aquaculture operations.
+    
+    \item \textbf{Responsibility:} Using digital twins to enhance rather than replace human responsibility for animal welfare.
+\end{itemize}
+
+\section{Conclusion}
+This tutorial has provided a comprehensive implementation of digital twins for modeling salmon wellbeing based on the conceptual framework described by Giske et al. (2025). The approach combines insights from neuroscience, behavioral ecology, and computational modeling to create virtual representatives of salmon that can predict stress, boredom, and overall wellbeing.
+
+By implementing survival circuits, episodic-like memory, and wellbeing assessment systems, the digital twin captures the key mechanisms underlying salmon behavior and experience. The evolutionary framework enables the model to adapt and improve over time, making it more representative of real salmon populations.
+
+The practical applications of this approach are numerous, from optimizing aquaculture facilities to developing early warning systems for wellbeing issues. By providing actionable information to fish farmers, regulators, and researchers, digital twins can support the implementation of the 3Rs (replacement, reduction, refinement) in animal research and improve the welfare of farmed salmon.
+
+As research in animal cognition and wellbeing continues to advance, the digital twin approach can be refined and extended to provide even more accurate predictions. This creates a positive feedback loop where digital simulations inform empirical research, which in turn improves the simulations.
+
+The ultimate goal is to create a tool that benefits both salmon welfare and aquaculture productivity, demonstrating that these objectives can be aligned rather than in conflict. By understanding and predicting wellbeing at a deeper level, we can create conditions where salmon thrive rather than merely survive in captivity.
+
+\section{Appendix: Complete Code Repository}
+The complete implementation code discussed in this tutorial is available in the accompanying GitHub repository: \url{https://github.com/arvidl/salmon-digital-twin}
+
+The repository includes:
+\begin{itemize}
+    \item Core implementation files (\texttt{notebooks})
+    \item Example scripts
+    \item Test scenarios
+    \item Documentation (\texttt{papers})
+    \item Sample data for validation (\texttt{data})
+    \item Conda environment (\texttt{environment.yml})
+\end{itemize}
+
+\subsection{Installation and Usage}
+To install and use the \texttt{salmon-digital-twin}:
+
+\begin{lstlisting}[language=bash]
+# Clone repository
+git clone https://github.com/arvidl/salmon-digital-twin.git
+cd salmon-digital-twin
+
+# Install dependencies
+#pip install -r requirements.txt
+conda env update -f environment.yml
+
+# Run example simulation
+#python examples/run_simulation.py
+\end{lstlisting}
+
+
+
+\subsection{Contributing}
+Contributions to the project are welcome. Please see the contribution guidelines in the repository for more information.
+
+
+\section*{Annotated Reference Guide}
+\addcontentsline{toc}{section}{Annotated Reference Guide}
+
+This section provides an annotated guide to key references organized by topic area, highlighting their relevance to digital twin implementation for salmon wellbeing.
+
+\subsection*{Core Frameworks and Concepts}
+\begin{itemize}
+    \item \textbf{Giske et al. (2025)} \cite{giske2025premises} -- The foundational paper on salmon digital twins that outlines the theoretical basis for monitoring and predicting salmon wellbeing through computational modeling.
+    
+    \item \textbf{Budaev et al. (2020)} \cite{budaev2020computational} -- Introduces a computational architecture for modeling animal sentience, emotions, and wellbeing that serves as a basis for digital twin development.
+    
+    \item \textbf{Budaev et al. (2019)} \cite{budaev2019decision} -- Bridges ecology and subjective cognition in animal decision-making, providing a framework for implementing cognition in digital twins.
+    
+    \item \textbf{Budaev et al. (2018)} \cite{budaev2018aha} -- Introduces the AHA (Adapted Heuristics and Architecture) cognitive architecture for Darwinian agents that can be adapted for salmon digital twins.
+\end{itemize}
+
+\subsection*{Fish Cognition and Emotions}
+\begin{itemize}
+    \item \textbf{Giske et al. (2013)} \cite{giske2013effects} -- Examines how emotions affect adaptive behavior in fish, providing insight into implementing emotional systems in digital twins.
+    
+    \item \textbf{Vindas et al. (2016)} \cite{vindas2016brain} -- Investigates serotonergic activation in farmed salmon, distinguishing between adaptation and pathology in stress responses.
+    
+    \item \textbf{Vindas et al. (2014)} \cite{vindas2014coping} -- Explores dopaminergic and neurotrophic responses in salmon when expected rewards are omitted, relevant for implementing prediction errors in digital twins.
+    
+    \item \textbf{Cabanac (1992)} \cite{cabanac1992pleasure} -- Presents the concept of pleasure as a common currency for decision-making across species, informing the implementation of wellbeing assessment.
+    
+    \item \textbf{Mendl \& Paul (2020)} \cite{mendl2020animal} -- Reviews current understanding of animal affect and its role in decision-making, providing a foundation for modeling emotional states.
+    
+    \item \textbf{Crump et al. (2020)} \cite{crump2020emotion} -- Examines the role of emotion in animal contests, offering insights into modeling social interactions and competitive behavior.
+\end{itemize}
+
+\subsection*{Consciousness and Sentience}
+\begin{itemize}
+    \item \textbf{Ginsburg \& Jablonka (2019)} \cite{ginsburg2019evolution} -- Comprehensive exploration of the evolution of consciousness and learning, providing theoretical foundation for digital twin cognition.
+    
+    \item \textbf{Low et al. (2012)} \cite{low2012cambridge} -- The Cambridge Declaration on Consciousness, affirming the presence of consciousness in non-human animals including fish.
+    
+    \item \textbf{Andrews et al. (2024)} \cite{andrews2024nydeclaration} -- The New York Declaration on Animal Consciousness, updating scientific consensus on animal consciousness.
+    
+    \item \textbf{Barron \& Klein (2016)} \cite{barron2016neural} -- Examines what insects can tell us about consciousness origins, providing insights for implementing minimal consciousness models.
+    
+    \item \textbf{Feinberg \& Mallatt (2016)} \cite{feinberg2016ancient} -- Explores the ancient origins of consciousness and how the brain created experience, informing digital twin cognitive models.
+    
+    \item \textbf{Seth (2021)} \cite{seth2021being} -- Presents new scientific approaches to understanding consciousness, offering perspectives for modeling subjective experience.
+    
+    \item \textbf{Zacks et al. (2022)} \cite{zacks2022futures} -- Investigates the evolution of imaginative animals and episodic-like memory, crucial for modeling prediction in digital twins.
+\end{itemize}
+
+\subsection*{Digital Twins and Computational Modeling}
+\begin{itemize}
+    \item \textbf{Rasheed et al. (2020)} \cite{rasheed2020digital} -- Reviews digital twin values, challenges, and enablers from a modeling perspective, providing practical implementation guidance.
+    
+    \item \textbf{VanderHorn \& Mahadevan (2021)} \cite{vanderhorn2021digital} -- Offers a framework for digital twin characterization and implementation applicable to biological systems.
+    
+    \item \textbf{Tao et al. (2022)} \cite{tao2022digital} -- Presents comprehensive approaches to digital twin modeling that can be adapted for biological applications.
+    
+    \item \textbf{Eliassen et al. (2016)} \cite{eliassen2016sensing} -- Demonstrates how to model proximate architecture for decision-making from sensing to emergent adaptations.
+    
+    \item \textbf{Giske et al. (2014)} \cite{giske2014emotion} -- Shows how emotion systems promote diversity and evolvability in evolutionary models, informing genetic algorithm implementation.
+    
+    \item \textbf{Andersen et al. (2016)} \cite{andersen2016proximate} -- Details the proximate architecture for decision-making in fish that can be directly implemented in digital twins.
+    
+    \item \textbf{Grimm \& Railsback (2013)} \cite{grimm2013individual} -- Provides foundational methods for individual-based modeling in ecology applicable to digital twin populations.
+\end{itemize}
+
+\subsection*{Neuroscience and Decision-Making}
+\begin{itemize}
+    \item \textbf{LeDoux (2012)} \cite{ledoux2012rethinking} -- Rethinks the emotional brain, introducing concepts like survival circuits central to digital twin decision architecture.
+    
+    \item \textbf{Anderson \& Adolphs (2014)} \cite{anderson2014framework} -- Presents a framework for studying emotions across species that can be applied to salmon emotion modeling.
+    
+    \item \textbf{Schultz (2024)} \cite{schultz2024dopamine} -- Examines dopamine mechanisms for reward maximization, crucial for implementing learning in digital twins.
+    
+    \item \textbf{Friston et al. (2010)} \cite{friston2010action} -- Introduces free-energy formulations for action and behavior that inform prediction-based decision making.
+    
+    \item \textbf{Peters et al. (2017)} \cite{peters2017uncertainty} -- Explores how uncertainty and stress are processed by the brain, informing stress modeling in digital twins.
+    
+    \item \textbf{McNamara \& Houston (1986)} \cite{mcnamara1986common} -- Classic paper on common currency for behavioral decisions that informs wellbeing-based decision models.
+    
+    \item \textbf{McNamara \& Houston (2009)} \cite{mcnamara2009integrating} -- Discusses integrating function and mechanism in behavioral models, relevant for digital twin architecture.
+\end{itemize}
+
+\subsection*{Stress, Allostasis, and Boredom}
+\begin{itemize}
+    \item \textbf{Korte et al. (2007)} \cite{korte2007new} -- Presents a new animal welfare concept based on allostasis that informs wellbeing modeling in digital twins.
+    
+    \item \textbf{Sterling (2012)} \cite{sterling2012allostasis} -- Details allostasis as a model of predictive regulation central to digital twin physiological modeling.
+    
+    \item \textbf{McEwen et al. (2015)} \cite{mcewen2015mechanisms} -- Explores mechanisms of stress in the brain that can be implemented in digital twin stress response systems.
+    
+    \item \textbf{Wingfield et al. (1998)} \cite{wingfield1998ecological} -- Introduces the "emergency life history stage" concept relevant for modeling extreme stress in digital twins.
+    
+    \item \textbf{Meagher (2019)} \cite{meagher2019boredom} -- Examines whether boredom is an animal welfare concern, providing foundation for modeling boredom in digital twins.
+    
+    \item \textbf{Burn (2017)} \cite{burn2017bestial} -- Presents a biological perspective on animal boredom with suggestions for scientific investigation.
+    
+    \item \textbf{Spruijt et al. (2001)} \cite{spruijt2001concept} -- Offers a concept of welfare based on reward mechanisms applicable to digital twin wellbeing assessment.
+\end{itemize}
+
+\subsection*{Environmental Enrichment and Learning}
+\begin{itemize}
+    \item \textbf{Salvanes et al. (2013)} \cite{salvanes2013environmental} -- Demonstrates how environmental enrichment promotes neural plasticity and cognitive ability in fish.
+    
+    \item \textbf{Zupanc (2006)} \cite{zupanc2006neurogenesis} -- Explores neurogenesis and neuronal regeneration in adult fish brains, relevant for modeling brain development.
+    
+    \item \textbf{Näslund et al. (2019)} \cite{naslund2019fish} -- Investigates how rearing environment affects brain development in hatchery-reared Atlantic salmon.
+    
+    \item \textbf{Arechavala-Lopez et al. (2022)} \cite{arechavalalopez2022environmental} -- Reviews environmental enrichment in fish aquaculture, offering practical applications.
+    
+    \item \textbf{Folkedal et al. (2010)} \cite{folkedal2010habituation} -- Studies habituation rates in Atlantic salmon, providing data for learning implementation.
+    
+    \item \textbf{Bratland et al. (2010)} \cite{bratland2010fright} -- Examines the transition from fright to anticipation in salmon, informing predictive models.
+    
+    \item \textbf{Dumitru \& Opdal (2024)} \cite{dumitru2024beyond} -- Discusses how rearing environment defines brain plasticity, challenging the mosaic model of brain evolution.
+\end{itemize}
+
+\subsection*{Aquaculture Welfare and Management}
+\begin{itemize}
+    \item \textbf{Stien et al. (2013)} \cite{stien2013salmon} -- Introduces the Salmon Welfare Index Model (SWIM 1.0) that catalogs key welfare indicators.
+    
+    \item \textbf{Pettersen et al. (2014)} \cite{pettersen2014salmon} -- Presents SWIM 2.0, an extended model for overall welfare assessment of caged Atlantic salmon.
+    
+    \item \textbf{Overton et al. (2019)} \cite{overton2019salmon} -- Reviews salmon lice treatments and mortality in Norwegian aquaculture, highlighting welfare challenges.
+    
+    \item \textbf{Bracke et al. (1999)} \cite{bracke1999overall} -- Presents overall animal welfare assessment based on needs and expert opinion.
+    
+    \item \textbf{van de Vis et al. (2020)} \cite{van2020welfare} -- Compares welfare of fishes in different production systems, providing benchmarks for digital twin validation.
+    
+    \item \textbf{Dawkins (2023)} \cite{dawkins2023farm} -- Discusses farm animal welfare beyond "natural" behavior, offering perspectives for defining appropriate wellbeing metrics.
+    
+    \item \textbf{Segner et al. (2019)} \cite{segner2019welfare} -- Presents FAO's approach to welfare of fishes in aquaculture, providing regulatory context.
+\end{itemize}
+
+\subsection*{Precision Aquaculture and Monitoring}
+\begin{itemize}
+    \item \textbf{Føre et al. (2018)} \cite{fore2018precision} -- Introduces precision fish farming as a framework for improving production in aquaculture.
+    
+    \item \textbf{Mustapha et al. (2021)} \cite{mustapha2021sustainable} -- Reviews roles of cloud computing, Internet of Things and AI in sustainable aquaculture.
+    
+    \item \textbf{Royer \& Pastres (2023)} \cite{royer2023data} -- Demonstrates data assimilation for efficient management of dissolved oxygen in aquaculture.
+    
+    \item \textbf{Eguiraun et al. (2018)} \cite{eguiraun2018reducing} -- Applies Shannon entropy to construct a biological warning system model for fish monitoring.
+    
+    \item \textbf{Neethirajan (2021)} \cite{neethirajan2021use} -- Reviews the use of AI in assessing affective states in livestock, with potential applications for fish.
+\end{itemize}
+
+\subsection*{3Rs and Ethical Considerations}
+\begin{itemize}
+    \item \textbf{Russell \& Burch (1959)} \cite{russell1959principles} -- The original work introducing the 3Rs (replacement, reduction, refinement) principles.
+    
+    \item \textbf{Grimm et al. (2023)} \cite{grimm2023advancing} -- Discusses advancing the 3Rs through innovation, implementation, ethics, and society.
+    
+    \item \textbf{Hawkins et al. (2011)} \cite{hawkins2011guidance} -- Provides guidance on severity classification of scientific procedures involving fish.
+    
+    \item \textbf{Sloman et al. (2019)} \cite{sloman2019ethical} -- Examines ethical considerations in fish research, offering guidelines for digital twin development.
+    
+    \item \textbf{Collins \& Part (2013)} \cite{collins2013modelling} -- Reviews approaches to modeling farm animal welfare, including methodological considerations.
+    
+    \item \textbf{Pielke (2007)} \cite{pielke2007honest} -- Introduces the concept of the "honest broker" in science and policy that digital twins could fulfill.
+    
+    \item \textbf{Gaffney \& Lavery (2022)} \cite{gaffney2022research} -- Identifies research gaps in salmonid welfare that digital twins could address.
+\end{itemize}
+
+\subsection*{Machine Learning and Data Science}
+\begin{itemize}
+    \item \textbf{Reichstein et al. (2024)} \cite{reichstein2024early} -- Demonstrates early warning of complex risk with integrated AI, applicable to wellbeing monitoring.
+    
+    \item \textbf{Schölkopf et al. (2021)} \cite{scholkopf2021toward} -- Discusses approaches to causal representation learning applicable to digital twin modeling.
+    
+    \item \textbf{Elkan (2001)} \cite{elkan2001foundations} -- Explores foundations of cost-sensitive learning for handling imbalanced wellbeing states.
+    
+    \item \textbf{Garcia \& Fernández (2015)} \cite{garcia2015comprehensive} -- Provides a comprehensive survey on safe reinforcement learning applicable to digital twin development.
+\end{itemize}
+
+\subsection*{Robustness and Systems Approaches}
+\begin{itemize}
+    \item \textbf{Kitano (2004)} \cite{kitano2004biological} -- Explores biological robustness concepts applicable to digital twin design.
+    
+    \item \textbf{Fernandez-Leon (2011)} \cite{fernandez2011evolving} -- Examines evolving cognitive-behavioral dependencies for robustness in situated agents.
+    
+    \item \textbf{Ruiz-Mirazo et al. (2004)} \cite{ruizmirazo2004universal} -- Discusses autonomy and open-ended evolution as universal life properties relevant to digital twin design.
+    
+    \item \textbf{Thompson (2007)} \cite{thompson2007mind} -- Presents a biology and phenomenology approach to mind that can inform digital twin consciousness models.
+    
+    \item \textbf{Colditz (2023)} \cite{colditz2023biological} -- Proposes a biological integrity framework for describing animal welfare and wellbeing.
+\end{itemize}
+
+\subsection*{Methodological Resources}
+\begin{itemize}
+    \item \textbf{Way (2017)} \cite{way2017cannot} -- Discusses Feynman's famous quote "What I cannot create, I do not understand" in the context of biological modeling.
+    
+    \item \textbf{Taborsky et al. (2021)} \cite{taborsky2021evolutionary} -- Presents an evolutionary theory of stress responses that can inform digital twin stress models.
+    
+    \item \textbf{Wingfield (2013)} \cite{wingfield2013comparative} -- Explores comparative biology of environmental stress and ability to cope with changing environments.
+    
+    \item \textbf{Barrett (2020)} \cite{barrett2020seven} -- Provides seven and a half lessons about the brain with implications for cognitive modeling.
+\end{itemize}
+
+%\bibliography{digital_twins}
+%\bibliographystyle{plain}
+\printbibliography
+
+\end{document}
