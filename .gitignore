@@ -1,0 +1,14 @@
+.DS_Store
+.ipynb_checkpoints
+slides
+.vscode
+
+# Ignore large dataset (>= 100 MB)
+
+
+# Avoid interference with the salmon-digital-twins repo when using private notebooks etc. for experimentation
+my_stuff/
+
+# Ignore TabPFN stuff
+src/tabpfn
+src/tabpfn-extensions
