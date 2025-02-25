@@ -3,7 +3,7 @@
 _Arvid Lundervold, 2025-02-25_ (with [Claude](https://www.anthropic.com/claude?utm_source=chatgpt.com) 3.7 Sonnet and [Cursor](https://www.cursor.com) IDE --  end-to-end in 5 hours!)
 
 
-Tutorial [[pdf](https://github.com/arvidl/salmon-digital-twins/blob/main/papers/DigitalTwin_20250225.pdf)] (including an Annotated Reference Guide) with Python code based on the paper:<br> J. Giske at al. _Premises for digital twins reporting on Atlantic salmon wellbeing_. <br>Behavioural Processes 2025;226:105163 [[link](https://www.sciencedirect.com/science/article/pii/S0376635725000257)] Open access: CC BY 4.0 License
+Tutorial [[pdf](https://github.com/arvidl/salmon-digital-twins/blob/main/papers/DigitalTwin_20250225.pdf)] (including an Annotated Reference Guide) with Python code based on the paper:<br> J. Giske et al. _Premises for digital twins reporting on Atlantic salmon wellbeing_. <br>Behavioural Processes 2025;226:105163 [[link](https://www.sciencedirect.com/science/article/pii/S0376635725000257)] Open access: CC BY 4.0 License
 
 
 <img src="https://github.com/arvidl/salmon-digital-twins/blob/main/assets/Claude_3.7_Sonnet_prompt.png?raw=true" alt="Salmon Digital Twin" width="800"/>
