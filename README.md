@@ -3,7 +3,10 @@
 _Arvid Lundervold, 2025-02-25_ (with Claude 3.7 Sonnet in Cursor IDE)
 
 
-Based on the paper: Giske at al. Premises for digital twins reporting on Atlantic salmon wellbeing. Behavioural Processes 2025;226:105163
+Based on the paper: Giske at al. _Premises for digital twins reporting on Atlantic salmon wellbeing_. <br>Behavioural Processes 2025;226:105163 [[link](https://www.sciencedirect.com/science/article/pii/S0376635725000257)] Open access: CC BY 4.0 License
+
+
+<img src="https://github.com/salmon-digital-twins/salmon-digital-twins/blob/main/assets/Claude_3.7_Sonnet_prompt.png" alt="Salmon Digital Twin" width="800"/>
 
 
 The two notebooks contains the complete implementation covering all sections of the tutorial:
@@ -23,6 +26,16 @@ and includes:
 
 - Full Python implementations of all components described in the paper
 - Visualization functions to explore the model's behavior
-- Test code for each component
+- Explanations of the code and the simulation results
+- Test code for some of the components
 - Simulations of both individual and population-level digital twins
 - The early warning system for detecting wellbeing issues
+
+
+
+## Notebooks
+
+| Notebook    |      1-Click Notebook      |
+|:----------|------|
+|  [01-basic-needs.ipynb](https://nbviewer.jupyter.org/github/arvidl/blob/main/notebooks/01-basic-needs.ipynb)<br> Basic building blocks; Neuronal Response; Sensors; Environment; Basic Needs;  Survival Circuts; <br> Global Organismic State (GOS); Episodic Memory; Learning; Prediction Error; <br> Reflections on Learning and Memory: Digital Salmon Twins vs. AI Systems; Adam optimizer: <br> Philosophical Considerations; Conclusions.     | [![Google Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/arvidl/blob/main/notebooks/01-basic-needs.ipynb)|
+|  [02-wellbeing.ipynb](https://nbviewer.jupyter.org/github/arvidl/blob/main/notebooks/02-wellbeing.ipynb)<br> Wellbeing Assessment; Decision Making; Complete Digital Twin; Early Warning System; <br> Population Simulation; Conclusion. | [![Google Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MMIV-ML/BMED365-2025/blob/main/Lab5-Comp-Mod/notebooks/01-action-potentials.ipynb)|
